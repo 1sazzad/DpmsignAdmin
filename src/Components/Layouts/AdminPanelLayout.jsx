@@ -1,6 +1,6 @@
-import React from "react";
-import { Outlet } from "react-router-dom";
-import AdminSidebar from "../AdminPanel/SharedComponentAdmin/AdminSidebar.jsx";
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import AdminSidebar from '../AdminPanel/SharedComponentAdmin/AdminSidebar';
 
 export default function AdminPanelLayout() {
   return (
