@@ -7,6 +7,10 @@ import router from './Components/router/router.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <RouterProvider router={router} ></RouterProvider>
+    {/* <RouterProvider router={router} ></RouterProvider> */}
+    <div>
+      <h1>Hello World from main.jsx!</h1>
+      <p>If you see this, basic React rendering is working.</p>
+    </div>
   </StrictMode>,
 )
