@@ -1,38 +1,42 @@
-const db = require('../config/db'); // Real DB connection
+// server/controllers/authController.js
+const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Helper to generate JWT
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+const generateToken = (adminId) => {
+  return jwt.sign({ adminId: adminId }, process.env.JWT_SECRET, { // Use adminId
     expiresIn: process.env.JWT_EXPIRES_IN || '1h',
   });
 };
 
-// (Optional) Example: Register a new admin - useful for initial setup
+// Register Admin - adapted for user's schema
 exports.registerAdmin = async (req, res) => {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) {
-        return res.status(400).json({ message: 'Please provide name, email, and password' });
+    const { name, email, password, phone, avatar } = req.body; // phone is NOT NULL
+    if (!name || !email || !password || !phone) {
+        return res.status(400).json({ message: 'Please provide name, email, phone, and password' });
     }
 
     try {
-        const [existingAdmins] = await db.query('SELECT email FROM admins WHERE email = ?', [email]);
+        const [existingAdmins] = await db.query('SELECT email FROM Admins WHERE email = ?', [email]);
         if (existingAdmins.length > 0) {
             return res.status(400).json({ message: 'Admin with this email already exists' });
         }
 
         const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(password, salt);
+        const hashedPassword = await bcrypt.hash(password, salt); // Use your column name 'password' for the hash
 
-        const [result] = await db.query('INSERT INTO admins (name, email, password_hash) VALUES (?, ?, ?)', [name, email, passwordHash]);
+        // Using backticks for table and column names if they are case sensitive or reserved words (though Admins and password are not typically)
+        const [result] = await db.query(
+            'INSERT INTO `Admins` (name, email, phone, password, avatar, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, NOW(), NOW())',
+            [name, email, phone, hashedPassword, avatar || null]
+        );
 
         if (result.insertId) {
             const token = generateToken(result.insertId);
             res.status(201).json({
                 message: 'Admin registered successfully',
                 token: token,
-                admin: { id: result.insertId, name, email },
+                admin: { adminId: result.insertId, name, email, phone, avatar: avatar || null },
             });
         } else {
             res.status(500).json({ message: 'Error registering admin' });
@@ -43,27 +47,34 @@ exports.registerAdmin = async (req, res) => {
     }
 };
 
-
+// Login Admin - adapted for user's schema
 exports.loginAdmin = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
+  const { email, password: plainPassword } = req.body; // 'password' from body is plain text
+  if (!email || !plainPassword) {
     return res.status(400).json({ message: 'Please provide email and password' });
   }
 
   try {
-    const [admins] = await db.query('SELECT * FROM admins WHERE email = ?', [email]);
+    const [admins] = await db.query('SELECT adminId, name, email, phone, password, avatar FROM `Admins` WHERE email = ?', [email]);
     if (admins.length === 0) {
       return res.status(401).json({ message: 'Invalid credentials (email not found)' });
     }
 
     const admin = admins[0];
-    const isMatch = await bcrypt.compare(password, admin.password_hash);
+    // 'admin.password' from DB is the hashed password
+    const isMatch = await bcrypt.compare(plainPassword, admin.password);
 
     if (isMatch) {
       res.json({
         message: 'Login successful',
-        token: generateToken(admin.id),
-        admin: { id: admin.id, name: admin.name, email: admin.email },
+        token: generateToken(admin.adminId), // Use adminId
+        admin: {
+            adminId: admin.adminId,
+            name: admin.name,
+            email: admin.email,
+            phone: admin.phone,
+            avatar: admin.avatar
+        },
       });
     } else {
       res.status(401).json({ message: 'Invalid credentials (password incorrect)' });
@@ -74,13 +85,13 @@ exports.loginAdmin = async (req, res) => {
   }
 };
 
+// Get Me - adapted for user's schema
 exports.getMe = async (req, res) => {
   try {
-    // req.user.id is populated by the 'protect' middleware from the JWT
-    if (!req.user || !req.user.id) {
+    if (!req.user || !req.user.adminId) { // req.user.adminId set by middleware
          return res.status(401).json({ message: 'Not authorized, user ID missing from token' });
     }
-    const [admins] = await db.query('SELECT id, name, email, created_at FROM admins WHERE id = ?', [req.user.id]);
+    const [admins] = await db.query('SELECT adminId, name, email, phone, avatar, createdAt FROM `Admins` WHERE adminId = ?', [req.user.adminId]);
     if (admins.length === 0) {
       return res.status(404).json({ message: 'Admin not found' });
     }

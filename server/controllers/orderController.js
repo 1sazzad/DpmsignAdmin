@@ -1,39 +1,48 @@
+// server/controllers/orderController.js
 const db = require('../config/db');
 
 exports.getOrders = async (req, res) => {
     try {
-        // Example: Implement basic pagination and filtering by status
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
         const offset = (page - 1) * limit;
-        const status = req.query.status; // e.g., 'Pending', 'Shipped'
 
-        let query = 'SELECT o.*, c.name as customer_name, c.email as customer_email FROM orders o LEFT JOIN customers c ON o.customer_id = c.id';
-        let countQuery = 'SELECT COUNT(*) FROM orders o';
-        const queryParams = [];
-        const countQueryParams = [];
+        const filterStatus = req.query.status; // e.g., 'order-request-received'
+        const filterPaymentStatus = req.query.paymentStatus; // e.g., 'pending'
 
-        if (status) {
-            query += ' WHERE o.status = ?';
-            countQuery += ' WHERE o.status = ?';
-            queryParams.push(status);
-            countQueryParams.push(status);
+        let whereClauses = [];
+        let queryParams = [];
+
+        if (filterStatus) {
+            whereClauses.push('o.status = ?');
+            queryParams.push(filterStatus);
+        }
+        if (filterPaymentStatus) {
+            whereClauses.push('o.paymentStatus = ?');
+            queryParams.push(filterPaymentStatus);
         }
 
-        query += ' ORDER BY o.order_date DESC LIMIT ? OFFSET ?';
+        const whereCondition = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        const baseQuery = 'FROM `Orders` o ' +
+                          'LEFT JOIN `Customers` cust ON o.customerId = cust.customerId ' +
+                          'LEFT JOIN `Staff` s ON o.staffId = s.staffId ';
+
+        const dataQuery = 'SELECT o.orderId, o.customerName, o.customerEmail, o.customerPhone, o.orderTotalPrice, o.status, o.paymentStatus, o.deliveryMethod, o.method, o.createdAt, ' +
+                          'cust.name as registeredCustomerName, s.name as staffName ' +
+                          baseQuery + whereCondition +
+                          'ORDER BY o.createdAt DESC LIMIT ? OFFSET ?';
         queryParams.push(limit, offset);
 
-        const [orders] = await db.query(query, queryParams);
-        const [[{ 'COUNT(*)': totalOrders }]] = await db.query(countQuery, countQueryParams);
+        const [orders] = await db.query(dataQuery, queryParams);
 
-        // For each order, fetch its items (can be N+1, optimize in production if needed)
-        for (const order of orders) {
-            const [items] = await db.query(
-                'SELECT oi.*, p.name as product_name FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?',
-                [order.id]
-            );
-            order.items = items;
-        }
+        const countQuery = 'SELECT COUNT(o.orderId) as totalOrders ' + baseQuery + whereCondition;
+        // Reset queryParams for count query (without limit/offset)
+        let countQueryParams = [];
+        if (filterStatus) countQueryParams.push(filterStatus);
+        if (filterPaymentStatus) countQueryParams.push(filterPaymentStatus);
+
+        const [[{ totalOrders }]] = await db.query(countQuery, countQueryParams);
 
         res.json({
             data: orders,
@@ -49,18 +58,38 @@ exports.getOrders = async (req, res) => {
 };
 
 exports.getOrderById = async (req, res) => {
+    const { orderId } = req.params;
     try {
-        const [orders] = await db.query('SELECT o.*, c.name as customer_name, c.email as customer_email FROM orders o LEFT JOIN customers c ON o.customer_id = c.id WHERE o.id = ?', [req.params.id]);
+        const [orders] = await db.query(
+            'SELECT o.*, cust.name as registeredCustomerName, cust.email as registeredCustomerEmail, s.name as staffName, ' +
+            'coup.code as couponCode, cour.name as courierName ' +
+            'FROM `Orders` o ' +
+            'LEFT JOIN `Customers` cust ON o.customerId = cust.customerId ' +
+            'LEFT JOIN `Staff` s ON o.staffId = s.staffId ' +
+            'LEFT JOIN `Coupons` coup ON o.couponId = coup.couponId ' +
+            'LEFT JOIN `Couriers` cour ON o.courierId = cour.courierId ' +
+            'WHERE o.orderId = ?',
+            [orderId]
+        );
+
         if (orders.length === 0) {
             return res.status(404).json({ message: 'Order not found' });
         }
         const order = orders[0];
 
         const [items] = await db.query(
-            'SELECT oi.*, p.name as product_name, p.image_url as product_image_url FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?',
-            [order.id]
+            'SELECT oi.*, p.name as productName, p.sku as productSku, pv.productVariantId as variantInfo ' + // Assuming ProductVariants has more info to join on
+            'FROM `OrderItems` oi ' +
+            'JOIN `Products` p ON oi.productId = p.productId ' +
+            'LEFT JOIN `ProductVariants` pv ON oi.productVariantId = pv.productVariantId ' +
+            'WHERE oi.orderId = ?',
+            [orderId]
         );
         order.items = items;
+
+        // Optionally, fetch OrderImages
+        const [images] = await db.query('SELECT imageName FROM `OrderImages` WHERE orderId = ?', [orderId]);
+        order.images = images.map(img => img.imageName);
 
         res.json(order);
     } catch (error) {
@@ -70,83 +99,123 @@ exports.getOrderById = async (req, res) => {
 };
 
 exports.updateOrderStatus = async (req, res) => {
+    const { orderId } = req.params;
     const { status } = req.body;
     if (!status) {
         return res.status(400).json({ message: 'Status is required' });
     }
-    // Add validation for allowed status values if necessary
-    // const allowedStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
-    // if (!allowedStatuses.includes(status)) {
-    //    return res.status(400).json({ message: 'Invalid status value' });
-    // }
+
+    const allowedStatuses = [
+        'order-request-received','consultation-in-progress','order-canceled','awaiting-advance-payment',
+        'advance-payment-received','design-in-progress','awaiting-design-approval','production-started',
+        'production-in-progress','ready-for-delivery','out-for-delivery','order-completed'
+    ];
+    if (!allowedStatuses.includes(status)) {
+       return res.status(400).json({ message: `Invalid status value. Allowed: ${allowedStatuses.join(', ')}` });
+    }
 
     try {
-        const [result] = await db.query('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id]);
+        const [result] = await db.query('UPDATE `Orders` SET status = ?, updatedAt = NOW() WHERE orderId = ?', [status, orderId]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Order not found or status unchanged' });
         }
-        res.json({ message: 'Order status updated successfully', id: req.params.id, status });
+        // TODO: Potentially add an entry to AuditLogs table here
+        res.json({ message: 'Order status updated successfully', orderId, status });
     } catch (error) {
         console.error('UpdateOrderStatus error:', error);
         res.status(500).json({ message: 'Server error updating order status', error: error.message });
     }
 };
 
-// TODO: Add createOrder endpoint - this would be more complex:
-// - Start a transaction
-// - Create the order in `orders` table
-// - For each item in the order:
-//   - Check product stock
-//   - Insert into `order_items` table
-//   - Decrement product stock_quantity in `products` table
-// - Commit transaction if all good, rollback if any error
-// - Example:
-/*
+// Placeholder for createOrder - more aligned with user's schema
 exports.createOrder = async (req, res) => {
-    const { customer_id, items, shipping_address, billing_address, notes } = req.body;
-    // Basic validation
-    if (!items || items.length === 0) {
-        return res.status(400).json({ message: 'Order must contain at least one item.' });
+    const {
+        customerId,
+        customerName, customerEmail, customerPhone,
+        staffId,
+        couponId,
+        billingAddress, additionalNotes,
+        method = 'offline',
+        deliveryMethod = 'shop-pickup',
+        paymentMethod,
+        paymentStatus = 'pending',
+        courierId, courierAddress,
+        items
+    } = req.body;
+
+    if (!staffId || !items || items.length === 0 || !customerPhone) {
+        return res.status(400).json({ message: 'Staff ID, items, and customer phone are required.' });
+    }
+    if (!customerId && (!customerName || !customerEmail)) {
+        return res.status(400).json({ message: 'Customer ID or Name & Email are required.'});
     }
 
     let connection;
     try {
-        connection = await db.getConnection(); // Get a connection from the pool
+        connection = await db.getConnection();
         await connection.beginTransaction();
 
-        let totalAmount = 0;
+        let currentCustomerId = customerId;
+        // TODO: If customerId is null, you might want to find existing customer by email/phone or create a new one in Customers table.
+        // This logic is simplified here.
+
+        let calculatedTotalPrice = 0;
         for (const item of items) {
-            const [products] = await connection.query('SELECT price, stock_quantity FROM products WHERE id = ? FOR UPDATE', [item.product_id]);
-            if (products.length === 0) {
-                throw new Error(`Product with ID ${item.product_id} not found.`);
+            if (item.price === undefined || item.quantity === undefined) {
+                throw new Error('Each item must have price and quantity.');
             }
-            const product = products[0];
-            if (product.stock_quantity < item.quantity) {
-                throw new Error(`Not enough stock for product ID ${item.product_id}. Available: ${product.stock_quantity}, Requested: ${item.quantity}`);
-            }
-            totalAmount += product.price * item.quantity;
+            calculatedTotalPrice += parseFloat(item.price) * parseInt(item.quantity, 10);
         }
 
-        const orderResult = await connection.query(
-            'INSERT INTO orders (customer_id, total_amount, shipping_address, billing_address, notes, status) VALUES (?, ?, ?, ?, ?, ?)',
-            [customer_id || null, totalAmount, shipping_address, billing_address, notes, 'Pending']
-        );
-        const orderId = orderResult[0].insertId;
+        // TODO: Apply coupon discount if couponId is valid and criteria met
+
+        const orderData = {
+            customerId: currentCustomerId,
+            customerName: customerName || (currentCustomerId ? null : 'Guest'),
+            customerEmail: customerEmail || (currentCustomerId ? null : 'guest@example.com'),
+            customerPhone,
+            staffId,
+            couponId: couponId || null,
+            billingAddress: billingAddress || 'N/A',
+            additionalNotes: additionalNotes || null,
+            method,
+            deliveryMethod,
+            status: 'order-request-received',
+            currentStatus: 'Order placed by admin/staff.',
+            paymentMethod: paymentMethod || 'cod-payment',
+            paymentStatus,
+            courierId: deliveryMethod === 'courier' ? courierId : null,
+            courierAddress: deliveryMethod === 'courier' ? courierAddress : null,
+            orderTotalPrice: calculatedTotalPrice,
+            deliveryDate: req.body.deliveryDate || null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+
+        const [orderResult] = await connection.query('INSERT INTO `Orders` SET ?', orderData);
+        const newOrderId = orderResult.insertId;
 
         for (const item of items) {
-            const [products] = await connection.query('SELECT price FROM products WHERE id = ?', [item.product_id]); // Fetch price again or trust client? For safety, fetch.
-            await connection.query(
-                'INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)',
-                [orderId, item.product_id, item.quantity, products[0].price]
-            );
-            await connection.query(
-                'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
-                [item.quantity, item.product_id]
-            );
+            const orderItemData = {
+                orderId: newOrderId,
+                productId: item.productId,
+                productVariantId: item.productVariantId,
+                quantity: item.quantity,
+                size: item.size || null,
+                widthInch: item.widthInch || null,
+                heightInch: item.heightInch || null,
+                price: item.price,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            await connection.query('INSERT INTO `OrderItems` SET ?', orderItemData);
+            // TODO: Implement stock update on Products/ProductVariants table if applicable
         }
+
+        // TODO: If order includes images (OrderImages table), handle their upload and association.
 
         await connection.commit();
-        res.status(201).json({ message: 'Order created successfully', orderId });
+        res.status(201).json({ message: 'Order created successfully', orderId: newOrderId, orderTotalPrice: calculatedTotalPrice });
 
     } catch (error) {
         if (connection) await connection.rollback();
@@ -156,4 +225,3 @@ exports.createOrder = async (req, res) => {
         if (connection) connection.release();
     }
 };
-*/

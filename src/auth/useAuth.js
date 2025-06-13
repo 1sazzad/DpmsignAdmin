@@ -74,4 +74,4 @@ const useAuth = () => {
   };
 };
 
-export default useAuth;
+export { useAuth }; // Changed to named export
