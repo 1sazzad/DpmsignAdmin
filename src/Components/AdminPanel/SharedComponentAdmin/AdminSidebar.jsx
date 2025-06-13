@@ -16,7 +16,7 @@ export default function AdminSidebar() {
 
   return (
     <div className={`min-h-screen bg-base-200 ${isCollapsed ? "w-20" : "w-64"} duration-300 relative`}>
-      
+
       {/* Toggle Collapse Icon (Right side) */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
@@ -47,66 +47,58 @@ export default function AdminSidebar() {
 
       {/* Navigation */}
       <nav className="px-2 space-y-1">
-        <Link to='/dashboard'><SidebarItem  icon={<FaChartLine />} label="Dashboard" collapsed={isCollapsed} /></Link>
-       <Link to='/pos'> <SidebarItem icon={<FaShoppingCart />} label="POS System" collapsed={isCollapsed} /></Link>
+        <Link to='/admin/dashboard'><SidebarItem  icon={<FaChartLine />} label="Dashboard" collapsed={isCollapsed} /></Link> {/* Updated Link */}
+       <Link to='/admin/pos'> <SidebarItem icon={<FaShoppingCart />} label="POS System" collapsed={isCollapsed} /></Link> {/* Updated Link */}
 
         {/* Dropdown Menus */}
         <SidebarItem
-  icon={<FaTags />}
-  label="Order"
-  collapsed={isCollapsed}
-  isDropdown
-  isOpen={openMenus.order}
-  onClick={() => toggleMenu("order")}
->
-  {openMenus.order && !isCollapsed && (
-    <div className="ml-14 text-gray-700 space-y-1">
-      <Link to="/orders/all" className="hover:underline block">All Orders</Link>
-      <Link to="/orders/neworder" className="hover:underline block">Pending</Link>
-      <Link to="/orders/completed" className="hover:underline block">Completed</Link>
-      <Link to="/orders/cancelledorder" className="hover:underline block">Cancelled</Link>
-    </div>
-  )}
-</SidebarItem>
-
+          icon={<FaTags />}
+          label="Order"
+          collapsed={isCollapsed}
+          isDropdown
+          isOpen={openMenus.order}
+          onClick={() => toggleMenu("order")}
+        >
+          {openMenus.order && !isCollapsed && (
+            <div className="ml-14 text-gray-700 space-y-1"> {/* This is around line 55 */}
+              <Link to="/admin/orders/all" className="hover:underline block">All Orders</Link> {/* Updated Link */}
+              <Link to="/admin/orders/neworder" className="hover:underline block">Pending</Link> {/* Updated Link */}
+              <Link to="/admin/orders/completed" className="hover:underline block">Completed</Link> {/* Updated Link */}
+              <Link to="/admin/orders/cancelledorder" className="hover:underline block">Cancelled</Link> {/* Updated Link */}
+            </div>
+          )}
+        </SidebarItem>
 
         <SidebarItem
-  icon={<FaBoxOpen />}
-  label="Products"
-  collapsed={isCollapsed}
-  isDropdown
-  isOpen={openMenus.products}
-  onClick={() => toggleMenu("products")}
->
-  {openMenus.products && !isCollapsed && (
-    <div className="ml-14 text-gray-700 space-y-1">
-      <Link to="/products/all" className="hover:underline block">All Products</Link>
-      <Link to="/products/categories" className="hover:underline block">Categories</Link>
-      <Link to="/products/add" className="hover:underline block">Add Product</Link>
-      <Link to="/products/review" className="hover:underline block">Product Review</Link>
-    </div>
-  )}
-</SidebarItem>
-
+          icon={<FaBoxOpen />}
+          label="Products"
+          collapsed={isCollapsed}
+          isDropdown
+          isOpen={openMenus.products}
+          onClick={() => toggleMenu("products")}
+        >
+          {openMenus.products && !isCollapsed && (
+            <div className="ml-14 text-gray-700 space-y-1">
+              <Link to="/admin/products/all" className="hover:underline block">All Products</Link> {/* Updated Link */}
+              <Link to="/admin/products/categories" className="hover:underline block">Categories</Link> {/* Updated Link */}
+              <Link to="/admin/products/add" className="hover:underline block">Add Product</Link> {/* Updated Link */}
+              <Link to="/admin/products/review" className="hover:underline block">Product Review</Link> {/* Updated Link */}
+            </div>
+          )}
+        </SidebarItem>
 
         {/* Static Items */}
-        <Link to='/coupons'><SidebarItem icon={<FaGift />} label="Coupons" collapsed={isCollapsed} /></Link>
-        <Link to='/media'><SidebarItem icon={<FaImages />} label="Media" collapsed={isCollapsed} /></Link>
-        <Link to='/customers'><SidebarItem icon={<FaUsers />} label="Customers" collapsed={isCollapsed} /></Link>
-        <Link to='/staff'><SidebarItem icon={<FaUserTie />} label="Staff" collapsed={isCollapsed} /></Link>
-        <Link to='/courier'><SidebarItem icon={<FaTruck />} label="Courier" collapsed={isCollapsed} /></Link>
-        <Link to='/transactions'><SidebarItem icon={<FaMoneyCheckAlt />} label="Transactions" collapsed={isCollapsed} /></Link>
-        <Link to='/newsletter'><SidebarItem icon={<FaBell />} label="Newsletter" collapsed={isCollapsed} /></Link>
-
-        <Link to='/inquiries'><SidebarItem icon={<FaEnvelope />} label="Inquiries" collapsed={isCollapsed} /></Link>
-        <Link to='/jobs'> <SidebarItem icon={<FaBriefcase />} label="Jobs" collapsed={isCollapsed} /></Link>
-        <Link to='/blogs'><SidebarItem icon={<FaNewspaper />} label="Blogs" collapsed={isCollapsed} /></Link>
-        <Link to='/faq'><SidebarItem icon={<FaQuestionCircle />} label="FAQ" collapsed={isCollapsed} /></Link>
-        
-        
-       
-        
-        
+        <Link to='/admin/coupons'><SidebarItem icon={<FaGift />} label="Coupons" collapsed={isCollapsed} /></Link> {/* Updated Link */}
+        <Link to='/admin/media'><SidebarItem icon={<FaImages />} label="Media" collapsed={isCollapsed} /></Link> {/* Updated Link */}
+        <Link to='/admin/customers'><SidebarItem icon={<FaUsers />} label="Customers" collapsed={isCollapsed} /></Link> {/* Updated Link */}
+        <Link to='/admin/staff'><SidebarItem icon={<FaUserTie />} label="Staff" collapsed={isCollapsed} /></Link> {/* Updated Link */}
+        <Link to='/admin/courier'><SidebarItem icon={<FaTruck />} label="Courier" collapsed={isCollapsed} /></Link> {/* Updated Link */}
+        <Link to='/admin/transactions'><SidebarItem icon={<FaMoneyCheckAlt />} label="Transactions" collapsed={isCollapsed} /></Link> {/* Updated Link */}
+        <Link to='/admin/newsletter'><SidebarItem icon={<FaBell />} label="Newsletter" collapsed={isCollapsed} /></Link> {/* Updated Link */}
+        <Link to='/admin/inquiries'><SidebarItem icon={<FaEnvelope />} label="Inquiries" collapsed={isCollapsed} /></Link> {/* Updated Link */}
+        <Link to='/admin/jobs'> <SidebarItem icon={<FaBriefcase />} label="Jobs" collapsed={isCollapsed} /></Link> {/* Updated Link */}
+        <Link to='/admin/blogs'><SidebarItem icon={<FaNewspaper />} label="Blogs" collapsed={isCollapsed} /></Link> {/* Updated Link */}
+        <Link to='/admin/faq'><SidebarItem icon={<FaQuestionCircle />} label="FAQ" collapsed={isCollapsed} /></Link> {/* Updated Link */}
       </nav>
 
       {/* Admin Footer */}
@@ -143,14 +135,15 @@ function SidebarItem({ icon, label, collapsed, isDropdown = false, isOpen, onCli
   );
 }
 
-function DropdownItems({ items }) {
-  return (
-    <div className="ml-10 text-sm text-gray-700 space-y-1">
-      {items.map((item, index) => (
-        <div key={index} className="hover:underline cursor-pointer">
-          {item}
-        </div>
-      ))}
-    </div>
-  );
-}
+// DropdownItems function is defined but not used in the provided code.
+// function DropdownItems({ items }) {
+//   return (
+//     <div className="ml-10 text-sm text-gray-700 space-y-1">
+//       {items.map((item, index) => (
+//         <div key={index} className="hover:underline cursor-pointer">
+//           {item}
+//         </div>
+//       ))}
+//     </div>
+//   );
+// }
