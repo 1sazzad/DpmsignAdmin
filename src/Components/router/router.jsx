@@ -35,15 +35,14 @@ const router = createBrowserRouter([
     path: "/admin",
     element: <ProtectedRoute />, // Protects all children of this route
     children: [
-      // This route object is for rendering AdminPanelLayout and its children when authenticated.
-      // It becomes the main content area for "/admin" after auth.
       {
-        index: true, // This ensures that when /admin is hit, and user is authenticated, AdminPanelLayout is rendered.
+        // Pathless layout route for authenticated admin section
+        // AdminPanelLayout will render its <Outlet /> for these children
         element: <AdminPanelLayout />,
         children: [
-          { index: true, element: <AdminDashboard /> }, // Default for /admin (inside AdminPanelLayout's Outlet)
-          { path: "dashboard", element: <AdminDashboard /> }, // Explicit path /admin/dashboard
-          { path: "pos", element: <PosSystem /> },
+          { index: true, element: <AdminDashboard /> }, // /admin will render AdminDashboard inside AdminPanelLayout
+          { path: "dashboard", element: <AdminDashboard /> }, // /admin/dashboard
+          { path: "pos", element: <PosSystem /> }, // /admin/pos
 
           // Order Dropdown
           { path: "orders/all", element: <Order /> },
@@ -68,12 +67,12 @@ const router = createBrowserRouter([
           { path: "jobs", element: <Jobs /> },
           { path: "blogs", element: <Blog /> },
           { path: "faq", element: <FAQ /> },
-        ],
+        ]
       },
       {
-        path: "login", // This is /admin/login
-        element: <Login />, // Login is a sibling, not protected by ProtectedRoute
-      },
+        path: "login", // /admin/login (sibling to the layout route, so not wrapped by AdminPanelLayout)
+        element: <Login />,
+      }
     ],
   },
   // The old "/" route is removed.
