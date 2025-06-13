@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useAuth from '../../../../auth/useAuth'; // Adjusted path
+import { useAuth } from '../../../../auth/useAuth'; // Changed to named import
 
 export default function Login() {
   const navigate = useNavigate();
