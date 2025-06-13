@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom"; // Added Navigate
 
 
 // Admin panel
@@ -31,6 +31,10 @@ import Login from "../AdminPanel/Pages/Login/Login";
 
 
 const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Navigate to="/admin/login" replace />,
+  },
   {
     path: "/admin",
     element: <ProtectedRoute />, // Protects all children of this route
