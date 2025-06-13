@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router-dom";
 
 // Admin panel
 import AdminPanelLayout from "../Layouts/AdminPanelLayout";
+import ProtectedRoute from "./ProtectedRoute"; // Import ProtectedRoute
 import AdminDashboard from "../AdminPanel/Pages/Dashboard/AdminDashboard";
 import PosSystem from "../AdminPanel/Pages/PosSystem/PosSystem";
 import Coupons from "../AdminPanel/Pages/Coupons/Coupons";
@@ -30,43 +31,52 @@ import Login from "../AdminPanel/Pages/Login/Login";
 
 
 const router = createBrowserRouter([
-
   {
-    path: "/",
-    element: <AdminPanelLayout></AdminPanelLayout>,
+    path: "/admin",
+    element: <ProtectedRoute />, // Protects all children of this route
     children: [
-      { path: "dashboard", element: <AdminDashboard></AdminDashboard> },
-      { path: "pos", element: <PosSystem></PosSystem>},
+      // This route object is for rendering AdminPanelLayout and its children when authenticated.
+      // It becomes the main content area for "/admin" after auth.
+      {
+        index: true, // This ensures that when /admin is hit, and user is authenticated, AdminPanelLayout is rendered.
+        element: <AdminPanelLayout />,
+        children: [
+          { index: true, element: <AdminDashboard /> }, // Default for /admin (inside AdminPanelLayout's Outlet)
+          { path: "dashboard", element: <AdminDashboard /> }, // Explicit path /admin/dashboard
+          { path: "pos", element: <PosSystem /> },
 
-      // Order Dropdown
-      { path: "orders/all", element: <Order></Order> },
-      { path: "orders/neworder", element: <NewRequest></NewRequest> },
-      { path: "orders/completed", element: <CompletedOrder></CompletedOrder> },
-      { path: "orders/cancelledorder", element: <CancelledOrder></CancelledOrder> },
+          // Order Dropdown
+          { path: "orders/all", element: <Order /> },
+          { path: "orders/neworder", element: <NewRequest /> },
+          { path: "orders/completed", element: <CompletedOrder /> },
+          { path: "orders/cancelledorder", element: <CancelledOrder /> },
 
-      // Products Dropdown
-      { path: "products/all", element: <ProductList></ProductList> },
-      { path: "products/categories", element: <Categories></Categories> },
-      { path: "products/add", element: <AddProduct></AddProduct> },
-      { path: "products/review", element: <ProductReview></ProductReview> },
+          // Products Dropdown
+          { path: "products/all", element: <ProductList /> },
+          { path: "products/categories", element: <Categories /> },
+          { path: "products/add", element: <AddProduct /> },
+          { path: "products/review", element: <ProductReview /> },
 
-      { path: "coupons", element: <Coupons></Coupons>},
-      { path: "media", element: <Media></Media> },
-      { path: "customers", element: <Customers></Customers> },
-      { path: "staff", element: <Staff></Staff> },
-      { path: "courier", element: <Courier></Courier> },
-      { path: "transactions", element: <Transactions></Transactions> },
-      { path: "newsletter", element: <Newsletter></Newsletter> },
-      { path: "inquiries", element: <Inqueries></Inqueries> },
-      { path: "jobs", element: <Jobs></Jobs> },
-      { path: "blogs", element: <Blog></Blog> },
-      { path: "faq", element: <FAQ></FAQ>},
-    ]
+          { path: "coupons", element: <Coupons /> },
+          { path: "media", element: <Media /> },
+          { path: "customers", element: <Customers /> },
+          { path: "staff", element: <Staff /> },
+          { path: "courier", element: <Courier /> },
+          { path: "transactions", element: <Transactions /> },
+          { path: "newsletter", element: <Newsletter /> },
+          { path: "inquiries", element: <Inqueries /> },
+          { path: "jobs", element: <Jobs /> },
+          { path: "blogs", element: <Blog /> },
+          { path: "faq", element: <FAQ /> },
+        ],
+      },
+      {
+        path: "login", // This is /admin/login
+        element: <Login />, // Login is a sibling, not protected by ProtectedRoute
+      },
+    ],
   },
-  {
-    path:'/admin',
-    element:<Login></Login>
-  }
+  // The old "/" route is removed.
 ]);
 
 export default router;
