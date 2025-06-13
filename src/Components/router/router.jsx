@@ -1,20 +1,20 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-
-// Ensure this path is correct based on your file structure
-import Login from "../AdminPanel/Pages/Login/Login";
-// Other imports for layouts and pages are intentionally removed for this temporary simplification.
+import Login from "../AdminPanel/Pages/Login/Login.jsx";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/login-test" replace />,
+    element: <Navigate to="/admin/login" replace />,
   },
   {
-    path: "/login-test",
-    element: <Login />,
+    path: "/admin",
+    children: [
+      {
+        path: "login",
+        element: <Login />,
+      },
+    ],
   },
-  // All other admin routes, ProtectedRoute, AdminPanelLayout related routes
-  // are removed for this temporary test.
 ]);
 
 export default router;
