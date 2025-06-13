@@ -230,25 +230,7 @@ export default function AddProduct() {
           </select>
         </div>
 
-        {/* Optional Discount Fields - uncomment and adapt if needed
-        <fieldset className="border p-4 rounded-md">
-            <legend className="text-sm font-medium text-gray-700 px-1">Discount (Optional)</legend>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
-                <div>
-                    <label htmlFor="discountStart" className="block text-xs font-medium text-gray-600">Discount Start Date</label> {/* Changed label for clarity */}
-                    <input type="date" name="discountStart" id="discountStart" value={productData.discountStart || ''} onChange={handleChange} className="mt-1 block w-full text-sm px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
-                </div>
-                <div>
-                    <label htmlFor="discountEnd" className="block text-xs font-medium text-gray-600">Discount End Date</label> {/* Changed label for clarity */}
-                    <input type="date" name="discountEnd" id="discountEnd" value={productData.discountEnd || ''} onChange={handleChange} className="mt-1 block w-full text-sm px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
-                </div>
-                <div>
-                    <label htmlFor="discountPercentage" className="block text-xs font-medium text-gray-600">Discount Percentage (%)</label>
-                    <input type="number" step="0.01" name="discountPercentage" id="discountPercentage" value={productData.discountPercentage || ''} onChange={handleChange} className="mt-1 block w-full text-sm px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
-                </div>
-            </div>
-        </fieldset>
-        */}
+        {/* The problematic commented-out discount fields section has been removed. */}
 
         <div className="flex items-center">
           <input
