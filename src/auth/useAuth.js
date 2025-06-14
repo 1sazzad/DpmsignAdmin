@@ -1,39 +1,31 @@
-// import { useState, useEffect } from 'react'; // Keep if you add state for user object
+// src/auth/useAuth.js
 import axiosInstance from '../api/axiosInstance';
 
 const useAuth = () => {
-  // Optional: store user object in state if needed across components
-  // const [user, setUser] = useState(null);
-
-  // useEffect(() => {
-  //   // Optionally load user from localStorage if token exists and is valid (e.g. by calling a /me endpoint)
-  //   const token = localStorage.getItem('adminAuthToken');
-  //   if (token) {
-  //     // To fully re-hydrate, you might want to call a /me endpoint here
-  //     // For now, isAuthenticated just checks token presence.
-  //   }
-  // }, []);
-
   const login = async (email, password) => {
     try {
+      // Path is relative to VITE_API_BASE_URL (e.g., http://localhost:5000/auth/login)
       const response = await axiosInstance.post('/auth/login', { email, password });
-      if (response.data && response.data.token) {
-        localStorage.setItem('adminAuthToken', response.data.token);
-        // if (response.data.admin) {
-        //   localStorage.setItem('adminUser', JSON.stringify(response.data.admin)); // Optional
-        //   // setUser(response.data.admin); // Optional
-        // }
-        return { success: true, admin: response.data.admin };
+
+      if (response.data && response.data.authToken && response.data.admin) {
+        localStorage.setItem('adminAuthToken', response.data.authToken);
+        localStorage.setItem('adminUser', JSON.stringify(response.data.admin));
+        localStorage.removeItem('staffUser'); // Clear any previous staff session
+        return { success: true, userType: 'admin', userData: response.data.admin };
+      } else if (response.data && response.data.authToken && response.data.staff) {
+        localStorage.setItem('adminAuthToken', response.data.authToken); // Or a different token key like 'staffAuthToken'
+        localStorage.setItem('staffUser', JSON.stringify(response.data.staff));
+        localStorage.removeItem('adminUser'); // Clear any previous admin session
+        return { success: true, userType: 'staff', userData: response.data.staff };
       }
-      // This case might not be reached if backend always returns error for failed login
-      return { success: false, message: 'Login failed: No token received' };
+      // Fallback if response structure is unexpected for successful login
+      return { success: false, message: response.data?.message || 'Login failed: Unexpected response structure.' };
     } catch (error) {
       let errorMessage = 'Login failed. Please try again.';
       if (error.response && error.response.data && error.response.data.message) {
         errorMessage = error.response.data.message;
       } else if (error.request) {
-        // The request was made but no response was received
-        errorMessage = 'Login failed: No response from server. Please check your network connection.';
+        errorMessage = 'Login failed: No response from server.';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -42,36 +34,40 @@ const useAuth = () => {
     }
   };
 
-  const logout = (navigateCallback) => { // navigateCallback is passed from component
+  const logout = (navigateCallback) => {
     localStorage.removeItem('adminAuthToken');
-    // localStorage.removeItem('adminUser'); // Optional: if you stored user details
-    // setUser(null); // Optional
-
-    // It's good practice to also inform the backend if it has a /logout endpoint
-    // axiosInstance.post('/auth/logout').catch(err => console.error("Logout API call failed", err));
-
+    localStorage.removeItem('adminUser');
+    localStorage.removeItem('staffUser'); // Also clear staff if stored
     if (navigateCallback) navigateCallback();
   };
 
   const isAuthenticated = () => {
     const token = localStorage.getItem('adminAuthToken');
-    // TODO: Add token expiration check for more robust auth by decoding the token
+    // TODO: Add token expiration check for more robust auth
     return !!token;
   };
 
-  // Optional: function to get current user details from localStorage
-  // const getCurrentUser = () => {
-  //   const userStr = localStorage.getItem('adminUser');
-  //   return userStr ? JSON.parse(userStr) : null;
-  // };
+  const getCurrentUser = () => { // Corrected function name syntax
+    const userStr = localStorage.getItem('adminUser'); // Prioritize admin for admin panel
+    if (userStr) return JSON.parse(userStr);
+    const staffStr = localStorage.getItem('staffUser'); // Fallback or alternative for staff
+    if (staffStr) return JSON.parse(staffStr);
+    return null;
+  };
+
+  const getUserType = () => {
+    if (localStorage.getItem('adminUser')) return 'admin';
+    if (localStorage.getItem('staffUser')) return 'staff';
+    return null;
+  }
 
   return {
     login,
     logout,
     isAuthenticated,
-    // getCurrentUser, // Optional
-    // user // Optional: if you manage user state here
+    getCurrentUser,
+    getUserType
   };
 };
 
-export { useAuth }; // Changed to named export
+export { useAuth }; // Keep as named export

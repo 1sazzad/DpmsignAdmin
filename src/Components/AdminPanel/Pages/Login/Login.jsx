@@ -26,12 +26,13 @@ export default function Login() {
     const result = await auth.login(email, password);
     setLoading(false);
 
-    if (result.success) {
-      // Navigate to /admin or /admin/dashboard.
-      // The router's ProtectedRoute will handle rendering AdminPanelLayout,
-      // which has AdminDashboard as its index.
+    if (result.success && result.userType === 'admin') {
       navigate('/admin', { replace: true });
-    } else {
+    } else if (result.success && result.userType === 'staff') {
+      setError('Staff login is not permitted for the admin panel.');
+      auth.logout(); // Log out the staff user immediately as they are not authorized for this panel
+    }
+     else {
       setError(result.message || 'Login failed. Please check your credentials.');
     }
   };
