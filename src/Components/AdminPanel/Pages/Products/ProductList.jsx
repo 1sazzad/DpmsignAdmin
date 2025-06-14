@@ -18,8 +18,8 @@ export default function ProductList() {
       setLoading(true);
       setError(null);
       try {
-        // Backend endpoint supports pagination: /products?page=1&limit=10
-        const response = await axiosInstance.get(`/products?page=${currentPage}&limit=${productsPerPage}`);
+            // Backend endpoint supports pagination: /product?page=1&limit=10 (singular 'product')
+            const response = await axiosInstance.get(`/product?page=${currentPage}&limit=${productsPerPage}`);
         if (response.data && response.data.data) {
           setProducts(response.data.data);
           setTotalPages(response.data.totalPages || 1);

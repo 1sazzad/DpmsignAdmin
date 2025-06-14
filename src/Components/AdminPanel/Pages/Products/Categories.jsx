@@ -17,8 +17,8 @@ export default function Categories() {
       setLoading(true);
       setError(null);
       try {
-        // The backend route for categories is /api/v1/products/categories
-        const response = await axiosInstance.get('/products/categories');
+            // The backend route for categories is /api/v1/product-category
+            const response = await axiosInstance.get('/product-category'); // Updated path
         setCategories(response.data || []); // Ensure categories is an array
       } catch (err) {
         console.error("Error fetching categories:", err);

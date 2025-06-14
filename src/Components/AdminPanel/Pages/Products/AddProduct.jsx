@@ -30,7 +30,7 @@ export default function AddProduct() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axiosInstance.get('/products/categories');
+        const response = await axiosInstance.get('/product-category'); // Updated path
         setCategories(response.data || []);
       } catch (err) {
         console.error("Error fetching categories:", err);
@@ -94,7 +94,7 @@ export default function AddProduct() {
     };
 
     try {
-      await axiosInstance.post('/products', payload);
+      await axiosInstance.post('/product/create', payload); // Updated path
       setSuccess('Product added successfully!');
       // Optionally clear form or navigate
       // setProductData({ name: '', description: '', slug: '', sku: '', basePrice: '', minOrderQuantity: 1, pricingType: 'flat', isActive: true, categoryId: '' });
