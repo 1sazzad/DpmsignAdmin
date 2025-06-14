@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const auth_middleware_1 = __importDefault(require("../middleware/auth.middleware"));
+const rateLimiter_middleware_1 = require("../middleware/rateLimiter.middleware");
+const product_category_middleware_1 = __importDefault(require("../middleware/product-category.middleware"));
+const product_category_controller_1 = __importDefault(require("../controller/product-category.controller"));
+const productCategoryMiddleware = new product_category_middleware_1.default();
+const productCategoryController = new product_category_controller_1.default();
+const authMiddleware = new auth_middleware_1.default();
+const productCategoryRouter = express_1.default.Router();
+productCategoryRouter.get("/", productCategoryMiddleware.validateFilteringQueries, productCategoryController.getAllCategories);
+productCategoryRouter.get("/:categoryId", productCategoryMiddleware.validateProductFetchByCategory, productCategoryController.getCategoryById);
+productCategoryRouter.post("/create", rateLimiter_middleware_1.strictLimiter, productCategoryMiddleware.validateProductCategoryCreation, productCategoryController.createCategory);
+productCategoryRouter.put("/", rateLimiter_middleware_1.strictLimiter, productCategoryMiddleware.validateProductCategoryEdit, productCategoryController.editCategory);
+productCategoryRouter.delete("/:categoryId", authMiddleware.authenticate(["admin"]), productCategoryMiddleware.validateProductCategoryDeletion, productCategoryController.deleteCategory);
+exports.default = productCategoryRouter;

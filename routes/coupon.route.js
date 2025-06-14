@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const auth_middleware_1 = __importDefault(require("../middleware/auth.middleware"));
+const rateLimiter_middleware_1 = require("../middleware/rateLimiter.middleware");
+const coupon_middleware_1 = __importDefault(require("../middleware/coupon.middleware"));
+const coupon_controller_1 = __importDefault(require("../controller/coupon.controller"));
+const couponMiddleware = new coupon_middleware_1.default();
+const couponController = new coupon_controller_1.default();
+const authMiddleware = new auth_middleware_1.default();
+const couponRouter = express_1.default.Router();
+couponRouter.get("/", authMiddleware.authenticate(["admin", "agent", "designer"]), couponMiddleware.validateFilteringQueries, couponController.getAllCoupons);
+couponRouter.post("/check", couponMiddleware.validateCouponCheck, couponController.checkCoupon);
+couponRouter.post("/create", rateLimiter_middleware_1.strictLimiter, couponMiddleware.validateCouponCreation, couponController.createCoupon);
+couponRouter.put("/", rateLimiter_middleware_1.strictLimiter, couponMiddleware.validateCouponEdit, couponController.editCoupon);
+couponRouter.delete("/:couponId", authMiddleware.authenticate(["admin"]), couponMiddleware.validateCouponDeletion, couponController.deleteCoupon);
+exports.default = couponRouter;
