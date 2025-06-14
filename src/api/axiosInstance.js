@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Use Vite environment variable for API Base URL or default to api.dpmsign server URL
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5005/api";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
