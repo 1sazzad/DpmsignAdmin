@@ -7,163 +7,131 @@ import swaggerUi from "swagger-ui-express";
 import swaggerSpecs from "../config/swagger.config";
 
 import {
-	serverUrlPrefix,
-	apiDocsUrl,
-	apiWhitelistedDomains,
-	staticDir,
+  apiDocsUrl,
+  apiWhitelistedDomains,
+  staticDir,
+  nodeEnv,
 } from "../config/dotenv.config";
 import { responseSender } from "../util";
 
+// Route imports
 import adminRouter from "../routes/admin.route";
-import notFoundController from "../controller/notFound.controller";
-import errorController from "../controller/error.controller";
-import staffRouter from "../routes/staff.route";
-import newsletterRouter from "../routes/newsletter.route";
-import inqueryRouter from "../routes/inquery.route";
-import customerRouter from "../routes/customer.route";
-import faqRouter from "../routes/faq.route";
 import authRouter from "../routes/auth.route";
-import productCategoryRouter from "../routes/product-category.route";
-import productRouter from "../routes/product.route";
-import productReviewRouter from "../routes/product-review.route";
-import couponRouter from "../routes/coupon.route";
-import orderRouter from "../routes/order.route";
-import mediaRouter from "../routes/media.route";
 import blogRouter from "../routes/blog.route";
-import jobRouter from "../routes/job.route";
-import clientRouter from "../routes/client.route";
 import cartRouter from "../routes/cart.route";
+import clientRouter from "../routes/client.route";
+import couponRouter from "../routes/coupon.route";
 import courierRouter from "../routes/courier.route";
+import customerRouter from "../routes/customer.route";
+import errorController from "../controller/error.controller";
+import faqRouter from "../routes/faq.route";
+import inqueryRouter from "../routes/inquery.route";
+import jobRouter from "../routes/job.route";
+import mediaRouter from "../routes/media.route";
+import newsletterRouter from "../routes/newsletter.route";
+import notFoundController from "../controller/notFound.controller";
+import orderRouter from "../routes/order.route";
+import productCategoryRouter from "../routes/product-category.route";
+import productReviewRouter from "../routes/product-review.route";
+import productRouter from "../routes/product.route";
+import staffRouter from "../routes/staff.route";
 import transactionRouter from "../routes/transaction.route";
 
 const app = express();
+const serverUrlPrefix = "/api/v1";
 
-export const allowedOrigins = apiWhitelistedDomains;
-export const corsOptions: CorsOptions = {
-	origin: (origin, callback) => {
-		console.log("Incoming request origin:", origin);
-		if (!origin || allowedOrigins?.includes(origin)) {
-			callback(null, true); // Allow the origin
-		} else {
-			callback(new Error("Not allowed by CORS")); // Reject the origin
-		}
-	},
-	methods: ["GET", "POST", "PUT", "DELETE"],
-	credentials: true,
+// CORS configuration
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, postman)
+    if (!origin || apiWhitelistedDomains.includes(origin)) {
+      callback(null, true);
+    } else {
+      // Log blocked origins in development
+      if (nodeEnv === "development") {
+        console.log("Blocked origin:", origin);
+      }
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+  maxAge: 86400, // 24 hours CORS preflight cache
 };
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-// app.use(cors(corsOptions));
-app.use(cors());
+// Basic security middleware
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        imgSrc: ["'self'", "data:", "blob:"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
+app.use(cors(corsOptions));
 app.use(compression());
-app.use(helmet());
 
-app.use(morgan("dev"));
+// Request parsing middleware
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+// Logging
+app.use(morgan(nodeEnv === "development" ? "dev" : "combined"));
+
+// Static files configuration
 app.use("/static", (_req, res, next) => {
-	res.setHeader("Access-Control-Allow-Origin", "*");
-	res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-	res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS");
-	res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-	res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-	res.setHeader("Content-Disposition", "inline"); // Ensure correct file handling
-	next();
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Content-Disposition", "inline");
+  next();
 });
-
 app.use("/static", express.static(staticDir));
 
-// Swagger UI setup
-app.use(apiDocsUrl, swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+// API Documentation
+if (nodeEnv !== "production") {
+  app.use(apiDocsUrl, swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+}
 
-// ping route to check the api heartbeat
-app.get(`${serverUrlPrefix}/`, (req, res) => {
-	responseSender(res, 200, "OK");
+// Health check routes
+app.get(`${serverUrlPrefix}/`, (_req, res) => {
+  responseSender(res, 200, "OK");
 });
 
-// health check
-app.get(`${serverUrlPrefix}/health`, (req, res) => {
-	responseSender(res, 200, "API is running.");
+app.get(`${serverUrlPrefix}/health`, (_req, res) => {
+  responseSender(res, 200, "API is running.");
 });
 
-// restrict disallowed origin request
-// app.use((req, res, next) => {
-// 	const origin = req.get("Origin");
-
-// 	// Allow health check route
-// 	if (req.path === `${serverUrlPrefix}/health`) {
-// 		return next();
-// 	}
-
-// 	// Block requests without an Origin header or with an invalid Origin
-// 	if (!origin || !allowedOrigins.includes(origin)) {
-// 		return responseSender(res, 403, "Access forbidden");
-// 	}
-
-// 	next();
-// });
-
-// auth routes
-app.use(`${serverUrlPrefix}/auth`, authRouter);
-
-// admin routes
+// API Routes
 app.use(`${serverUrlPrefix}/admin`, adminRouter);
-
-// staff routes
-app.use(`${serverUrlPrefix}/staff`, staffRouter);
-
-// newsletter routes
-app.use(`${serverUrlPrefix}/newsletter`, newsletterRouter);
-
-// inquery routes
-app.use(`${serverUrlPrefix}/inquery`, inqueryRouter);
-
-// customer routes
-app.use(`${serverUrlPrefix}/customer`, customerRouter);
-
-// faq routes
-app.use(`${serverUrlPrefix}/faq`, faqRouter);
-
-// product category routes
-app.use(`${serverUrlPrefix}/product-category`, productCategoryRouter);
-
-// product review routes
-app.use(`${serverUrlPrefix}/product-review`, productReviewRouter);
-
-// coupon routes
-app.use(`${serverUrlPrefix}/coupon`, couponRouter);
-
-// product routes
-app.use(`${serverUrlPrefix}/product`, productRouter);
-
-// order routes
-app.use(`${serverUrlPrefix}/order`, orderRouter);
-
-// media routes
-app.use(`${serverUrlPrefix}/media`, mediaRouter);
-
-// blog routes
+app.use(`${serverUrlPrefix}/auth`, authRouter);
 app.use(`${serverUrlPrefix}/blog`, blogRouter);
-
-// job routes
-app.use(`${serverUrlPrefix}/job`, jobRouter);
-
-// client routes
-app.use(`${serverUrlPrefix}/client`, clientRouter);
-
-// cart routes
 app.use(`${serverUrlPrefix}/cart`, cartRouter);
-
-// courier routes
+app.use(`${serverUrlPrefix}/client`, clientRouter);
+app.use(`${serverUrlPrefix}/coupon`, couponRouter);
 app.use(`${serverUrlPrefix}/courier`, courierRouter);
-
-// transaction routes
+app.use(`${serverUrlPrefix}/customer`, customerRouter);
+app.use(`${serverUrlPrefix}/faq`, faqRouter);
+app.use(`${serverUrlPrefix}/inquery`, inqueryRouter);
+app.use(`${serverUrlPrefix}/job`, jobRouter);
+app.use(`${serverUrlPrefix}/media`, mediaRouter);
+app.use(`${serverUrlPrefix}/newsletter`, newsletterRouter);
+app.use(`${serverUrlPrefix}/order`, orderRouter);
+app.use(`${serverUrlPrefix}/product-category`, productCategoryRouter);
+app.use(`${serverUrlPrefix}/product-review`, productReviewRouter);
+app.use(`${serverUrlPrefix}/product`, productRouter);
+app.use(`${serverUrlPrefix}/staff`, staffRouter);
 app.use(`${serverUrlPrefix}/transaction`, transactionRouter);
 
-// 404 middleware
+// Error handling
 app.use(notFoundController);
-
-// global error controller
 app.use(errorController);
 
 export default app;
