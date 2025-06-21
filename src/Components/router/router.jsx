@@ -28,11 +28,14 @@ import AddProduct from "../AdminPanel/Pages/Products/AddProduct";
 import ProductReview from "../AdminPanel/Pages/Products/ProductReview";
 import Login from "../AdminPanel/Pages/Login/Login";
 
-
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Navigate to="/admin/login" replace />,
+  },
+  {
+    path: "/admin/login",
+    element: <Login />,
   },
   {
     path: "/admin",
@@ -63,14 +66,10 @@ const router = createBrowserRouter([
           { path: "jobs", element: <Jobs /> },
           { path: "blogs", element: <Blog /> },
           { path: "faq", element: <FAQ /> },
-        ]
+        ],
       },
-      {
-        path: "login",
-        element: <Login />,
-      }
-    ]
-  }
+    ],
+  },
 ]);
 
 export default router;

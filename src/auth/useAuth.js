@@ -4,11 +4,11 @@ import axiosInstance from "../api/axiosInstance";
 const useAuth = () => {
   const login = async (email, password) => {
     try {
-      // Path is relative to VITE_API_BASE_URL
-      const response = await axiosInstance.post("/auth/admin/login", {
-        email,
-        password,
-      });
+      // Path is relative to VITE_API_BASE_URL (e.g., http://localhost:5000/auth/login)
+      const response = await axiosInstance.post(
+        "https://test.api.dpmsign.com/api/auth/login",
+        { email, password }
+      );
 
       if (response.data && response.data.authToken && response.data.admin) {
         localStorage.setItem("adminAuthToken", response.data.authToken);
